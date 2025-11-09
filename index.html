@@ -37,7 +37,35 @@
   <video id="preview" autoplay muted></video>
   <br>
   <button id="startBtn">撮影開始</button>
-  <button id="switchBtn">カメラ切替</button>
+  <button id="switchBtn">カメラ切替</button><video id="preview" autoplay playsinline></video>
+
+<div class="controls">
+  <!-- 今回追加：カメラ切替ボタン -->
+  <button id="switchBtn" style="background-color: #007BFF; color: white;">カメラ切替</button>
+  
+  <!-- 既存：撮影開始ボタン -->
+  <button id="startBtn" style="background-color: #28A745; color: white;">撮影開始</button>
+  
+  <!-- 既存：撮影停止ボタン -->
+  <button id="stopBtn" style="background-color: #DC3545; color: white;">撮影停止</button>
+</div>controls {
+  display: flex;
+  justify-content: space-around; /* 均等に配置 */
+  margin-top: 10px;
+}
+
+.controls button {
+  padding: 15px 25px;      /* 指で押しやすい大きさ */
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+}let useFrontCamera = true;  // 前面カメラを最初に使用
+const switchBtn = document.getElementById("switchBtn");
+
+switchBtn.onclick = async () => {
+  useFrontCamera = !useFrontCamera;  // 前面／背面を切り替え
+  await initCamera();                 // 新しいカメラで映像を更新
+};
   <button id="stopBtn" disabled>停止</button>
   <button id="saveBtn" disabled>保存＆再生</button>
 
