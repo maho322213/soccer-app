@@ -51,7 +51,18 @@
   <button class="tagBtn" data-tag="フリーキック">フリーキック</button>
   <button class="tagBtn" data-tag="オフサイド">オフサイド</button>
   <button class="tagBtn" data-tag="コーナーキック">コーナーキック</button>
-  <button class="tagBtn" data-tag="キックオフ">キックオフ</button>
+  <button class="tagBtn" data-tag="キックオフ">キックオフ</button><video id="video" controls width="640"></video>
+
+<div>
+  <!-- 撮影・カメラ切替・タグ付けボタンは既存のまま -->
+
+  <!-- ハイライト機能 -->
+  <button id="playHighlight">ハイライト再生</button>
+  <button id="saveHighlight">ハイライト保存</button>
+
+  <!-- 動画全体保存 -->
+  <button id="saveFullVideo">動画全体を保存</button>
+</div>
 </div>
 
 <!-- オリジナルタグ追加 -->
@@ -286,6 +297,13 @@ function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, '0')}`;
-}
+}// 既存コード（撮影・タグ付け・カメラ切替など）
+
+// ここから追加
+const video = document.getElementById('video');
+
+document.getElementById('playHighlight').onclick = () => { /* ハイライト再生 */ };
+document.getElementById('saveHighlight').onclick = () => { /* ハイライト保存 */ };
+document.getElementById('saveFullVideo').onclick = () => { /* 全体保存 */ };
 </body>
 </html>
