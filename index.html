@@ -44,7 +44,22 @@
   <button id="switchBtn" style="background-color: #007BFF; color: white;">カメラ切替</button>
   
   <!-- 既存：撮影開始ボタン -->
-  <button id="startBtn" style="background-color: #28A745; color: white;">撮影開始</button>
+  <button id="startBtn" style="background-color: #28A745; color: white;">撮影開始</button><!-- タグボタンの表示 -->
+<div id="tagContainer">
+  <button class="tagBtn" data-tag="ゴール">ゴール</button>
+  <button class="tagBtn" data-tag="シュート">シュート</button>
+  <button class="tagBtn" data-tag="フリーキック">フリーキック</button>
+  <button class="tagBtn" data-tag="オフサイド">オフサイド</button>
+  <button class="tagBtn" data-tag="コーナーキック">コーナーキック</button>
+  <button class="tagBtn" data-tag="キックオフ">キックオフ</button>
+</div>
+
+<!-- オリジナルタグ追加 -->
+<input type="text" id="newTagInput" placeholder="オリジナルタグ">
+<button id="addTagBtn">追加</button>
+
+<h2>ハイライト</h2>
+<div id="highlightList"></div>
   
   <!-- 既存：撮影停止ボタン -->
   <button id="stopBtn" style="background-color: #DC3545; color: white;">撮影停止</button>
@@ -114,6 +129,75 @@ switchBtn.onclick = async () => {
     saveBtn.onclick = () => {
       recorded.play();
     };
-  </script>
+  </script>const video = document.getElementById('video');
+const tagContainer = document.getElementById('tagContainer');
+const newTagInput = document.getElementById('newTagInput');
+const addTagBtn = document.getElementById('addTagBtn');
+const highlightList = document.getElementById('highlightList');
+
+let recordedTags = [];
+
+// 基本タグのクリック
+document.querySelectorAll('.tagBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tagName = btn.getAttribute('data-tag');
+    const time = video.currentTime;
+    recordedTags.push({ tag: tagName, time });
+    updateHighlights();
+  });
+});
+
+// オリジナルタグの追加
+addTagBtn.addEventListener('click', () => {
+  const tagName = newTagInput.value.trim();
+  if (!tagName) return;
+
+  const newBtn = document.createElement('button');
+  newBtn.classList.add('tagBtn');
+  newBtn.setAttribute('data-tag', tagName);
+  newBtn.textContent = tagName;
+  tagContainer.appendChild(newBtn);
+
+  newBtn.addEventListener('click', () => {
+    const time = video.currentTime;
+    recordedTags.push({ tag: tagName, time });
+    updateHighlights();
+  });
+
+  newTagInput.value = '';
+});
+
+// ハイライトの更新
+function updateHighlights() {
+  highlightList.innerHTML = '';
+  recordedTags.forEach((entry, index) => {
+    const btn = document.createElement('button');
+    btn.textContent = `${entry.tag} (${formatTime(entry.time)})`;
+    btn.addEventListener('click', () => playHighlight(entry.time));
+    highlightList.appendChild(btn);
+  });
+}
+
+// ハイライト再生（前後5秒）
+function playHighlight(time) {
+  const start = Math.max(0, time - 5);
+  const end = Math.min(video.duration, time + 5);
+  video.currentTime = start;
+  video.play();
+
+  const interval = setInterval(() => {
+    if (video.currentTime >= end) {
+      video.pause();
+      clearInterval(interval);
+    }
+  }, 100);
+}
+
+// 秒 → mm:ss 形式
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
 </body>
 </html>
