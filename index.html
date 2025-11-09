@@ -145,6 +145,94 @@ document.querySelectorAll('.tagBtn').forEach(btn => {
     recordedTags.push({ tag: tagName, time });
     updateHighlights();
   });
+});// ----------------------
+// タグデータ保存用
+let tagData = []; // タグの記録を保存
+
+// タグボタンが押されたときの処理（既存のタグ付けボタンの後に追加）
+document.querySelectorAll('.tag-button').forEach(button => {
+  button.addEventListener('click', () => {
+    const tag = button.getAttribute('data-tag');
+    const timestamp = videoElement.currentTime.toFixed(2);
+    tagData.push({ tag, timestamp });
+    console.log(`タグ: ${tag}, 時間: ${timestamp}s`);
+  });
+});
+
+// ----------------------
+// 簡易分析ボタン（ページ下部などに追加）
+const analyzeBtn = document.createElement('button');
+analyzeBtn.textContent = "タグ統計を見る";
+analyzeBtn.addEventListener('click', () => {
+  const summary = tagData.reduce((acc, item) => {
+    acc[item.tag] = (acc[item.tag] || 0) + 1;
+    return acc;
+  }, {});
+  alert("タグ統計:\n" + JSON.stringify(summary, null, 2));
+});
+document.body.appendChild(analyzeBtn);// ----------------------
+// タグデータ保存（既存タグボタンと連動）
+let tagData = []; // タグの記録を保存
+
+document.querySelectorAll('.tag-button').forEach(button => {
+  button.addEventListener('click', () => {
+    const tag = button.getAttribute('data-tag');
+    const timestamp = videoElement.currentTime.toFixed(2);
+    tagData.push({ tag, timestamp });
+    console.log(`タグ: ${tag}, 時間: ${timestamp}s`);
+  });
+});
+
+// ----------------------
+// 分析ボタンを作成
+const analyzeBtn = document.createElement('button');
+analyzeBtn.textContent = "分析とハイライト再生";
+document.body.appendChild(analyzeBtn);
+
+analyzeBtn.addEventListener('click', () => {
+  if(tagData.length === 0){
+    alert("まだタグが記録されていません");
+    return;
+  }
+
+  // タグ統計
+  const summary = tagData.reduce((acc, item) => {
+    acc[item.tag] = (acc[item.tag] || 0) + 1;
+    return acc;
+  }, {});
+
+  let message = "タグ統計:\n";
+  for(const [tag, count] of Object.entries(summary)){
+    message += `${tag}: ${count}回\n`;
+  }
+  alert(message);
+
+  // タイムライン表示（簡易版）
+  console.log("タイムライン（秒）:", tagData);
+
+  // ハイライト再生（ゴールとシュートだけ例）
+  const highlightTags = ['ゴール','シュート'];
+  let highlights = tagData.filter(item => highlightTags.includes(item.tag));
+
+  if(highlights.length > 0){
+    alert(`ハイライト再生: ${highlights.length}個のプレー`);
+    let index = 0;
+
+    function playHighlight() {
+      if(index >= highlights.length) return;
+      videoElement.currentTime = highlights[index].timestamp;
+      videoElement.play();
+      setTimeout(() => {
+        videoElement.pause();
+        index++;
+        playHighlight();
+      }, 3000); // 1プレー3秒で簡易再生
+    }
+
+    playHighlight();
+  } else {
+    alert("ゴール・シュートのハイライトはありません");
+  }
 });
 
 // オリジナルタグの追加
