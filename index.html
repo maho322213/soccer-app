@@ -17,7 +17,10 @@
       margin-top: 20px;
       border: 3px solid #333;
       border-radius: 8px;
-    }
+    }<!-- コメント・メモ入力欄 -->
+<input type="text" id="sceneNote" placeholder="メモを入力">
+<button id="addNote">メモを追加</button>
+<ul id="notesList"></ul>
     button {
       padding: 10px 20px;
       margin: 10px;
@@ -45,7 +48,14 @@
   
   <!-- 既存：撮影開始ボタン -->
   <button id="startBtn" style="background-color: #28A745; color: white;">撮影開始</button><!-- タグボタンの表示 -->
-<div id="tagContainer">
+<div id="tagContainer"><!-- 再生速度変更 -->
+<label for="speedControl">再生速度:</label>
+<select id="speedControl">
+  <option value="0.5">0.5x</option>
+  <option value="1" selected>1x</option>
+  <option value="1.5">1.5x</option>
+  <option value="2">2x</option>
+</select>
   <button class="tagBtn" data-tag="ゴール">ゴール</button>
   <button class="tagBtn" data-tag="シュート">シュート</button>
   <button class="tagBtn" data-tag="フリーキック">フリーキック</button>
@@ -304,6 +314,21 @@ const video = document.getElementById('video');
 
 document.getElementById('playHighlight').onclick = () => { /* ハイライト再生 */ };
 document.getElementById('saveHighlight').onclick = () => { /* ハイライト保存 */ };
-document.getElementById('saveFullVideo').onclick = () => { /* 全体保存 */ };
+document.getElementById('saveFullVideo').onclick = () => { /* 全体保存 */ };// コメント・メモ機能
+const notesList = document.getElementById('notesList');
+
+document.getElementById('addNote').onclick = () => {
+    const noteText = document.getElementById('sceneNote').value;
+    if(noteText) {
+        const li = document.createElement('li');
+        li.textContent = noteText;
+        notesList.appendChild(li);
+        document.getElementById('sceneNote').value = '';
+    }
+};// 再生速度変更機能
+const video = document.getElementById('video');
+document.getElementById('speedControl').onchange = (e) => {
+    video.playbackRate = parseFloat(e.target.value);
+};
 </body>
 </html>
