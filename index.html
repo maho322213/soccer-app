@@ -2,238 +2,233 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>サッカー試合管理システム</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>サッカー試合管理 完全最終版</title>
 <style>
-  body { font-family: sans-serif; margin: 20px; background:#f0f0f0; }
-  h2 { margin-top: 20px; }
-  .team-section, .video-section, .tag-section, .highlight-section, .memo-section { 
-      background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 8px; 
-  }
-  .player { display:inline-block; padding:5px 10px; margin:5px; background:#cce5ff; border-radius:5px; cursor:move; }
-  #formation { display:grid; grid-template-columns:repeat(4, 80px); grid-gap:5px; margin-top:10px; }
-  .tag-button { margin:5px; padding:5px 10px; cursor:pointer; border-radius:4px; background:#d4edda; border:none; }
-  .memo-item { margin:5px 0; padding:5px; background:#fff3cd; border-radius:4px; }
+body { font-family: Arial; margin:20px; background:#f7f7f7; }
+h2 { margin-top:20px; }
+.container { display:flex; flex-wrap:wrap; gap:20px; }
+.box { background:white; padding:15px; border-radius:8px; box-shadow:0 0 5px rgba(0,0,0,0.2); }
+.team-box { width:300px; }
+label { display:block; margin-top:5px; }
+input, select, textarea { width:100%; margin-top:3px; margin-bottom:10px; }
+button { padding:6px 10px; margin-top:5px; cursor:pointer; }
+#videoPreview { width:480px; height:270px; background:black; }
+#formation { display:grid; grid-template-columns: repeat(5, 60px); grid-gap:5px; margin-top:10px; }
+.player { background:#ddd; padding:5px; text-align:center; border-radius:4px; cursor:move; }
+#tags { display:flex; flex-wrap:wrap; gap:5px; }
+.tag-btn { padding:5px 10px; border-radius:4px; background:#88c; color:white; cursor:pointer; }
+#memoList, #highlightList { max-height:200px; overflow-y:auto; margin-top:10px; background:#eef; padding:5px; border-radius:4px; }
+#score { font-size:24px; margin-top:10px; }
+.highlight-item { background:#cfc; margin:3px 0; padding:3px; border-radius:3px; cursor:pointer; }
 </style>
 </head>
 <body>
 
-<h1>サッカー試合管理システム</h1>
+<h1>サッカー試合管理 完全最終版</h1>
 
-<div class="team-section">
-  <h2>チーム情報</h2>
-  <label>チーム名: <input id="teamName" placeholder="例: FC東京"></label><br><br>
-  <label>スタメン (名前,カンマ区切り): <input id="starters" placeholder="例: 太郎,次郎,三郎"></label><br><br>
-  <label>ベンチ (名前,カンマ区切り): <input id="bench" placeholder="例: 四郎,五郎"></label><br><br>
-  <label>スタッフ (名前,カンマ区切り): <input id="staff" placeholder="例: コーチ,マネージャー"></label><br><br>
-  <label>フォーメーション (名前順,ドラッグ可): <input id="formationInput" placeholder="例: GK,DF1,DF2,DF3,DF4,MF1,MF2,MF3,MF4,FW1,FW2"></label><br><br>
-  <button onclick="updateTeamInfo()">更新</button>
-  
-  <div id="teamDisplay" style="margin-top:10px;"></div>
+<div class="container">
+
+<!-- チーム情報 -->
+<div class="box team-box">
+<h2>チーム情報</h2>
+<label>自チーム名<input id="myTeam" type="text" value="チームA"></label>
+<label>相手チーム名<input id="oppTeam" type="text" value="チームB"></label>
+<label>スタメン（カンマ区切り）<input id="starters" type="text" value="太郎,次郎,三郎,四郎,五郎,六郎,七郎,八郎,九郎,十郎,十一郎"></label>
+<label>ベンチ（カンマ区切り）<input id="bench" type="text" value="十二郎,十三郎,十四郎"></label>
+<label>スタッフ（カンマ区切り）<input id="staff" type="text" value="監督,コーチ"></label>
+<label>フォーメーション（カンマ区切り）<input id="formationInput" type="text" value="GK,DF,DF,DF,DF,MF,MF,MF,MF,FW,FW"></label>
+<button onclick="renderTeam()">表示更新</button>
+
+<h3>フォーメーション</h3>
+<div id="formation"></div>
 </div>
 
-<div class="video-section">
-  <h2>試合動画</h2>
-  <video id="video" width="480" height="270" controls></video><br><br>
-  <button id="startRecord">録画開始</button>
-  <button id="stopRecord">録画停止</button>
-  <a id="downloadLink" style="display:none;">動画を保存</a>
-</div>
+<!-- 試合管理 -->
+<div class="box">
+<h2>試合管理</h2>
+<div>試合時間: <span id="matchTime">00:00</span></div>
+<div id="score">0 - 0</div>
+<button onclick="startMatch()">試合開始</button>
+<button onclick="pauseMatch()">一時停止</button>
+<button onclick="resetMatch()">リセット</button>
 
-<div class="tag-section">
-  <h2>タグ付け</h2>
-  <input id="newTag" placeholder="オリジナルタグ追加">
-  <button onclick="addTag()">追加</button><br>
-  <div id="tags">
-    <button class="tag-button" onclick="addHighlight('シュート')">シュート</button>
-    <button class="tag-button" onclick="addHighlight('コーナーキック')">コーナーキック</button>
-    <button class="tag-button" onclick="addHighlight('フリーキック')">フリーキック</button>
-    <button class="tag-button" onclick="addHighlight('ファウル')">ファウル</button>
-    <button class="tag-button" onclick="addHighlight('ゴール')">ゴール</button>
-  </div>
-</div>
+<h3>動画録画</h3>
+<video id="videoPreview" autoplay muted></video><br>
+<button onclick="startRecording()">録画開始</button>
+<button onclick="stopRecording()">録画停止</button>
 
-<div class="highlight-section">
-  <h2>ハイライト</h2>
-  <ul id="highlightList"></ul>
-</div>
+<h3>プレータグ付け</h3>
+<div id="tags"></div>
+<input id="newTag" placeholder="オリジナルタグ追加">
+<button onclick="addTag()">追加</button>
 
-<div class="memo-section">
-  <h2>メモ</h2>
-  <input id="memoText" placeholder="試合メモ">
-  <button onclick="addMemo()">追加</button>
-  <div id="memoList"></div>
-</div>
+<h3>メモ / コメント</h3>
+<textarea id="memoInput" placeholder="メモ入力"></textarea>
+<button onclick="addMemo()">追加</button>
+<div id="memoList"></div>
 
-<div>
-  <h2>試合時間</h2>
-  <span id="gameTime">00:00</span> | ゴール数: <span id="goalCount">0</span>
-  <button onclick="startTimer()">開始</button>
-  <button onclick="stopTimer()">停止</button>
-  <button onclick="resetTimer()">リセット</button>
-</div>
+<h3>ハイライト</h3>
+<div id="highlightList"></div>
 
-<div>
-  <h2>データ保存/読み込み</h2>
-  <button onclick="saveData()">保存</button>
-  <input type="file" id="loadFile">
-  <button onclick="loadData()">読み込み</button>
+<h3>データ保存・共有</h3>
+<button onclick="downloadData()">JSONで保存</button>
+</div>
 </div>
 
 <script>
-let team = {teamName:'', starters:[], bench:[], staff:[], formation:[]};
-let timer = null, seconds=0, goalCount=0;
-let highlights = [], memos = [];
-let mediaRecorder, recordedBlobs;
+let matchSeconds = 0;
+let matchInterval = null;
+let myScore = 0;
+let oppScore = 0;
+let tags = ["シュート","コーナーキック","フリーキック","ファウル","ゴール"];
+let mediaRecorder;
+let recordedBlobs = [];
+let highlights = [];
+let memos = [];
 
-// ----- チーム情報 -----
-function updateTeamInfo(){
-  team.teamName = document.getElementById('teamName').value;
-  team.starters = document.getElementById('starters').value.split(',');
-  team.bench = document.getElementById('bench').value.split(',');
-  team.staff = document.getElementById('staff').value.split(',');
-  team.formation = document.getElementById('formationInput').value.split(',');
-  displayTeam();
-}
-
-function displayTeam(){
-  let div = document.getElementById('teamDisplay');
-  div.innerHTML = `<b>${team.teamName}</b><br>
-                   <u>スタメン:</u> ${team.starters.join(', ')}<br>
-                   <u>ベンチ:</u> ${team.bench.join(', ')}<br>
-                   <u>スタッフ:</u> ${team.staff.join(', ')}<br>
-                   <u>フォーメーション:</u>`;
-  let formDiv = document.createElement('div');
-  formDiv.id = 'formation';
-  team.formation.forEach((player, idx)=>{
-    let p = document.createElement('div');
-    p.className='player';
-    p.textContent=player;
-    p.draggable=true;
-    p.ondragstart=e=>e.dataTransfer.setData('text/plain', idx);
-    p.ondrop=e=>{
-      let fromIdx = e.dataTransfer.getData('text');
-      [team.formation[fromIdx], team.formation[idx]]=[team.formation[idx], team.formation[fromIdx]];
-      displayTeam();
-    };
-    p.ondragover=e=>e.preventDefault();
-    formDiv.appendChild(p);
+function renderTeam(){
+  const formationContainer = document.getElementById("formation");
+  formationContainer.innerHTML="";
+  const formationInput = document.getElementById("formationInput").value.split(",");
+  formationInput.forEach(player => {
+    const div = document.createElement("div");
+    div.className = "player";
+    div.innerText = player;
+    div.draggable = true;
+    div.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', e.target.innerText); });
+    div.addEventListener('dragover', e => e.preventDefault());
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      const dragged = e.dataTransfer.getData('text');
+      const targetText = e.target.innerText;
+      e.target.innerText = dragged;
+      formationInput[formationInput.indexOf(dragged)] = targetText;
+      formationInput[formationInput.indexOf(targetText)] = dragged;
+    });
+    formationContainer.appendChild(div);
   });
-  div.appendChild(formDiv);
 }
 
-// ----- タイマー -----
-function startTimer(){ if(!timer) timer=setInterval(()=>{seconds++; updateTime();},1000);}
-function stopTimer(){ clearInterval(timer); timer=null; }
-function resetTimer(){ seconds=0; goalCount=0; updateTime();}
-function updateTime(){
-  let min = String(Math.floor(seconds/60)).padStart(2,'0');
-  let sec = String(seconds%60).padStart(2,'0');
-  document.getElementById('gameTime').textContent=`${min}:${sec}`;
-  document.getElementById('goalCount').textContent=goalCount;
+function startMatch(){
+  if(matchInterval) return;
+  matchInterval = setInterval(()=>{
+    matchSeconds++;
+    document.getElementById("matchTime").innerText = 
+      String(Math.floor(matchSeconds/60)).padStart(2,"0") + ":" + String(matchSeconds%60).padStart(2,"0");
+  },1000);
 }
 
-// ----- ハイライト/タグ -----
-function addHighlight(tag){
-  highlights.push({tag:tag,time:seconds});
-  if(tag==='ゴール') goalCount++;
-  updateTime();
-  renderHighlights();
+function pauseMatch(){
+  clearInterval(matchInterval);
+  matchInterval = null;
 }
+
+function resetMatch(){
+  pauseMatch();
+  matchSeconds=0;
+  document.getElementById("matchTime").innerText="00:00";
+  myScore=0; oppScore=0;
+  updateScore();
+  highlights=[];
+  memos=[];
+  document.getElementById("highlightList").innerHTML="";
+  document.getElementById("memoList").innerHTML="";
+}
+
+function updateScore(){ document.getElementById("score").innerText = myScore+" - "+oppScore; }
+
 function addTag(){
-  let t = document.getElementById('newTag').value.trim();
-  if(t){
-    let btn = document.createElement('button');
-    btn.className='tag-button';
-    btn.textContent=t;
-    btn.onclick=()=>addHighlight(t);
-    document.getElementById('tags').appendChild(btn);
-    document.getElementById('newTag').value='';
+  const t = document.getElementById("newTag").value.trim();
+  if(t && !tags.includes(t)){
+    tags.push(t);
+    renderTags();
   }
+  document.getElementById("newTag").value="";
 }
-function renderHighlights(){
-  let ul = document.getElementById('highlightList');
-  ul.innerHTML='';
-  highlights.forEach(h=>{
-    let li = document.createElement('li');
-    let min = String(Math.floor(h.time/60)).padStart(2,'0');
-    let sec = String(h.time%60).padStart(2,'0');
-    li.textContent=`[${min}:${sec}] ${h.tag}`;
-    ul.appendChild(li);
+
+function renderTags(){
+  const container = document.getElementById("tags");
+  container.innerHTML="";
+  tags.forEach(tag => {
+    const btn = document.createElement("button");
+    btn.className="tag-btn";
+    btn.innerText = tag;
+    btn.onclick = ()=>{
+      const time = document.getElementById("matchTime").innerText;
+      const hl = {tag,time};
+      highlights.push(hl);
+
+      const div = document.createElement("div");
+      div.className="highlight-item";
+      div.innerText = `[${time}] ${tag}`;
+      div.onclick = ()=> alert(`ハイライト再生：${time} の動画部分を再生`);
+      document.getElementById("highlightList").appendChild(div);
+
+      if(tag==="ゴール"){ myScore++; updateScore(); }
+    }
+    container.appendChild(btn);
   });
 }
 
-// ----- メモ -----
 function addMemo(){
-  let text = document.getElementById('memoText').value.trim();
-  if(text){
-    memos.push({text:text,time:seconds});
-    renderMemos();
-    document.getElementById('memoText').value='';
-  }
-}
-function renderMemos(){
-  let div = document.getElementById('memoList');
-  div.innerHTML='';
-  memos.forEach(m=>{
-    let min = String(Math.floor(m.time/60)).padStart(2,'0');
-    let sec = String(m.time%60).padStart(2,'0');
-    let d = document.createElement('div');
-    d.className='memo-item';
-    d.textContent=`[${min}:${sec}] ${m.text}`;
-    div.appendChild(d);
-  });
+  const text = document.getElementById("memoInput").value.trim();
+  if(!text) return;
+  const div = document.createElement("div");
+  const time = document.getElementById("matchTime").innerText;
+  div.innerText = `[${time}] ${text}`;
+  memos.push({time,text});
+  document.getElementById("memoList").appendChild(div);
+  document.getElementById("memoInput").value="";
 }
 
-// ----- データ保存/読み込み -----
-function saveData(){
-  let data = {team, highlights, memos};
-  let blob = new Blob([JSON.stringify(data)],{type:'application/json'});
-  let url = URL.createObjectURL(blob);
-  let a = document.createElement('a');
-  a.href = url; a.download='match_data.json'; a.click();
-}
-function loadData(){
-  let file = document.getElementById('loadFile').files[0];
-  if(file){
-    let reader = new FileReader();
-    reader.onload = e=>{
-      let data = JSON.parse(e.target.result);
-      team=data.team;
-      highlights=data.highlights;
-      memos=data.memos;
-      document.getElementById('teamName').value=team.teamName;
-      document.getElementById('starters').value=team.starters.join(',');
-      document.getElementById('bench').value=team.bench.join(',');
-      document.getElementById('staff').value=team.staff.join(',');
-      document.getElementById('formationInput').value=team.formation.join(',');
-      displayTeam(); renderHighlights(); renderMemos();
-    };
-    reader.readAsText(file);
-  }
-}
-
-// ----- 録画 -----
-const video = document.getElementById('video');
-document.getElementById('startRecord').onclick=startRecording;
-document.getElementById('stopRecord').onclick=stopRecording;
-
+// --- 録画 ---
 async function startRecording(){
-  recordedBlobs=[];
-  let stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
-  video.srcObject=stream;
-  mediaRecorder = new MediaRecorder(stream,{mimeType:'video/webm;codecs=vp9'});
-  mediaRecorder.ondataavailable=e=>{if(e.data && e.data.size>0) recordedBlobs.push(e.data);}
+  const video = document.getElementById("videoPreview");
+  const stream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  video.srcObject = stream;
+  recordedBlobs = [];
+  mediaRecorder = new MediaRecorder(stream,{mimeType:'video/webm'});
+  mediaRecorder.ondataavailable = e=>{ if(e.data && e.data.size>0) recordedBlobs.push(e.data); };
   mediaRecorder.start();
 }
-
 function stopRecording(){
   mediaRecorder.stop();
-  let superBuffer = new Blob(recordedBlobs,{type:'video/webm'});
-  video.srcObject=null;
-  video.src = window.URL.createObjectURL(superBuffer);
-  let link=document.getElementById('downloadLink');
-  link.href=video.src; link.download='match_video.webm'; link.style.display='inline';
+  const blob = new Blob(recordedBlobs,{type:'video/webm'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "match_video.webm";
+  a.click();
 }
+
+// --- データ保存・共有 ---
+function downloadData(){
+  const data = {
+    myTeam: document.getElementById("myTeam").value,
+    oppTeam: document.getElementById("oppTeam").value,
+    starters: document.getElementById("starters").value.split(","),
+    bench: document.getElementById("bench").value.split(","),
+    staff: document.getElementById("staff").value.split(","),
+    formation: document.getElementById("formationInput").value.split(","),
+    matchSeconds,
+    myScore,
+    oppScore,
+    tags,
+    highlights,
+    memos
+  };
+  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "match_data.json";
+  a.click();
+}
+
+// 初期描画
+renderTeam();
+renderTags();
 </script>
 
 </body>
