@@ -1,54 +1,39 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>撮影＆再生テスト</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      background-color: #f4f4f4;
-      padding: 20px;
-    }
-    video {
-      width: 90%;
-      max-width: 400px;
-      margin-top: 20px;
-      border: 3px solid #333;
-      border-radius: 8px;
-    }<!-- コメント・メモ入力欄 -->
-<input type="text" id="sceneNote" placeholder="メモを入力">
-<button id="addNote">メモを追加</button>
-<ul id="notesList"></ul>
-    button {
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #startBtn { background-color: #4CAF50; color: white; }
-    #stopBtn { background-color: #f44336; color: white; }
-    #saveBtn { background-color: #2196F3; color: white; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>試合撮影＆フォーメーション管理</title>
+<style>
+  body { font-family: sans-serif; text-align: center; background-color: #f4f4f4; padding: 20px; }
+  video { width: 90%; max-width: 400px; margin-top: 10px; border: 3px solid #333; border-radius: 8px; }
+  input, select, button { margin: 5px; padding: 8px; font-size: 14px; border-radius: 5px; }
+  #field { position: relative; width: 640px; height: 360px; margin: 10px auto; background-color: #4CAF50; border: 2px solid #333; border-radius: 8px; }
+  .player { position: absolute; padding: 4px 6px; background-color: #fff; border: 1px solid #000; border-radius: 50%; cursor: grab; user-select: none; }
+  #highlightList button { display:block; margin: 3px; }
+</style>
 </head>
 <body>
-  <h1>🎥 撮影＆再生テスト</h1>
 
-  <video id="preview" autoplay muted></video>
-  <br>
-  <button id="startBtn">撮影開始</button>
-  <button id="switchBtn">カメラ切替</button><video id="preview" autoplay playsinline></video>
+<h1>🎥 試合撮影＆フォーメーション管理</h1>
 
-<div class="controls">
-  <!-- 今回追加：カメラ切替ボタン -->
-  <button id="switchBtn" style="background-color: #007BFF; color: white;">カメラ切替</button>
-  
-  <!-- 既存：撮影開始ボタン -->
-  <button id="startBtn" style="background-color: #28A745; color: white;">撮影開始</button><!-- タグボタンの表示 -->
-<div id="tagContainer"><!-- 再生速度変更 -->
+<!-- チーム情報入力 -->
+<div>
+  <input type="text" id="team1" placeholder="チーム1名">
+  <input type="text" id="team2" placeholder="チーム2名">
+  <input type="text" id="venue" placeholder="試合会場">
+  <input type="time" id="startTime">
+</div>
+
+<!-- 動画 -->
+<video id="preview" autoplay muted></video>
+<br>
+<button id="startBtn">撮影開始</button>
+<button id="stopBtn" disabled>撮影停止</button>
+<button id="saveBtn" disabled>保存＆再生</button>
+<video id="recorded" controls style="display:none;"></video>
+
+<!-- 再生速度 -->
 <label for="speedControl">再生速度:</label>
 <select id="speedControl">
   <option value="0.5">0.5x</option>
@@ -56,279 +41,159 @@
   <option value="1.5">1.5x</option>
   <option value="2">2x</option>
 </select>
+
+<!-- タグ機能 -->
+<div id="tagContainer">
   <button class="tagBtn" data-tag="ゴール">ゴール</button>
   <button class="tagBtn" data-tag="シュート">シュート</button>
   <button class="tagBtn" data-tag="フリーキック">フリーキック</button>
   <button class="tagBtn" data-tag="オフサイド">オフサイド</button>
-  <button class="tagBtn" data-tag="コーナーキック">コーナーキック</button>
-  <button class="tagBtn" data-tag="キックオフ">キックオフ</button><video id="video" controls width="640"></video>
-
-<div>
-  <!-- 撮影・カメラ切替・タグ付けボタンは既存のまま -->
-
-  <!-- ハイライト機能 -->
-  <button id="playHighlight">ハイライト再生</button>
-  <button id="saveHighlight">ハイライト保存</button>
-
-  <!-- 動画全体保存 -->
-  <button id="saveFullVideo">動画全体を保存</button>
 </div>
-</div>
-
-<!-- オリジナルタグ追加 -->
 <input type="text" id="newTagInput" placeholder="オリジナルタグ">
 <button id="addTagBtn">追加</button>
 
 <h2>ハイライト</h2>
 <div id="highlightList"></div>
-  
-  <!-- 既存：撮影停止ボタン -->
-  <button id="stopBtn" style="background-color: #DC3545; color: white;">撮影停止</button>
-</div>controls {
-  display: flex;
-  justify-content: space-around; /* 均等に配置 */
-  margin-top: 10px;
-}
 
-.controls button {
-  padding: 15px 25px;      /* 指で押しやすい大きさ */
-  font-size: 16px;
-  border: none;
-  border-radius: 8px;
-}let useFrontCamera = true;  // 前面カメラを最初に使用
-const switchBtn = document.getElementById("switchBtn");
+<!-- メモ -->
+<input type="text" id="sceneNote" placeholder="メモ入力">
+<button id="addNote">メモ追加</button>
+<ul id="notesList"></ul>
 
-switchBtn.onclick = async () => {
-  useFrontCamera = !useFrontCamera;  // 前面／背面を切り替え
-  await initCamera();                 // 新しいカメラで映像を更新
-};
-  <button id="stopBtn" disabled>停止</button>
-  <button id="saveBtn" disabled>保存＆再生</button>
+<!-- フォーメーション -->
+<h2>フォーメーション（名前表示・ドラッグ可）</h2>
+<div id="field"></div>
+<input type="text" id="playerName" placeholder="選手名">
+<button id="addPlayerBtn">選手追加</button>
 
-  <video id="recorded" controls style="display:none;"></video>
+<!-- データ保存 -->
+<button id="saveAllBtn">全データ保存(JSON)</button>
 
-  <script>
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const preview = document.getElementById('preview');
-    const recorded = document.getElementById('recorded');
-
-    let mediaRecorder;
-    let recordedChunks = [];
-
-    // カメラへのアクセスを要求
-    async function initCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      preview.srcObject = stream;
-      return stream;
-    }
-
-    startBtn.onclick = async () => {
-      const stream = await initCamera();
-      recordedChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        recorded.src = URL.createObjectURL(blob);
-        recorded.style.display = 'block';
-      };
-      mediaRecorder.start();
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-      saveBtn.disabled = true;
-    };
-
-    stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-      saveBtn.disabled = false;
-    };
-
-    saveBtn.onclick = () => {
-      recorded.play();
-    };
-  </script>const video = document.getElementById('video');
+<script>
+let useFrontCamera = true;
+let mediaRecorder;
+let recordedChunks = [];
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const saveBtn = document.getElementById('saveBtn');
+const preview = document.getElementById('preview');
+const recorded = document.getElementById('recorded');
+const video = document.getElementById('recorded');
+const speedControl = document.getElementById('speedControl');
 const tagContainer = document.getElementById('tagContainer');
 const newTagInput = document.getElementById('newTagInput');
 const addTagBtn = document.getElementById('addTagBtn');
 const highlightList = document.getElementById('highlightList');
+const notesList = document.getElementById('notesList');
+const sceneNote = document.getElementById('sceneNote');
+const field = document.getElementById('field');
+const playerNameInput = document.getElementById('playerName');
+const addPlayerBtn = document.getElementById('addPlayerBtn');
+const saveAllBtn = document.getElementById('saveAllBtn');
 
-let recordedTags = [];
+// カメラ初期化
+async function initCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+  preview.srcObject = stream;
+  return stream;
+}
 
-// 基本タグのクリック
-document.querySelectorAll('.tagBtn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const tagName = btn.getAttribute('data-tag');
-    const time = video.currentTime;
-    recordedTags.push({ tag: tagName, time });
+// 録画
+startBtn.onclick = async () => {
+  const stream = await initCamera();
+  recordedChunks = [];
+  mediaRecorder = new MediaRecorder(stream);
+  mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, {type:'video/webm'});
+    recorded.src = URL.createObjectURL(blob);
+    recorded.style.display = 'block';
+  };
+  mediaRecorder.start();
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+  saveBtn.disabled = true;
+};
+stopBtn.onclick = () => { mediaRecorder.stop(); startBtn.disabled=false; stopBtn.disabled=true; saveBtn.disabled=false; };
+saveBtn.onclick = () => recorded.play();
+
+// 再生速度
+speedControl.onchange = e => video.playbackRate = parseFloat(e.target.value);
+
+// タグ機能
+let tagData = [];
+document.querySelectorAll('.tagBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    tagData.push({tag: btn.dataset.tag, timestamp: video.currentTime.toFixed(2)});
     updateHighlights();
   });
-});// ----------------------
-// タグデータ保存用
-let tagData = []; // タグの記録を保存
-
-// タグボタンが押されたときの処理（既存のタグ付けボタンの後に追加）
-document.querySelectorAll('.tag-button').forEach(button => {
-  button.addEventListener('click', () => {
-    const tag = button.getAttribute('data-tag');
-    const timestamp = videoElement.currentTime.toFixed(2);
-    tagData.push({ tag, timestamp });
-    console.log(`タグ: ${tag}, 時間: ${timestamp}s`);
-  });
 });
-
-// ----------------------
-// 簡易分析ボタン（ページ下部などに追加）
-const analyzeBtn = document.createElement('button');
-analyzeBtn.textContent = "タグ統計を見る";
-analyzeBtn.addEventListener('click', () => {
-  const summary = tagData.reduce((acc, item) => {
-    acc[item.tag] = (acc[item.tag] || 0) + 1;
-    return acc;
-  }, {});
-  alert("タグ統計:\n" + JSON.stringify(summary, null, 2));
-});
-document.body.appendChild(analyzeBtn);// ----------------------
-// タグデータ保存（既存タグボタンと連動）
-let tagData = []; // タグの記録を保存
-
-document.querySelectorAll('.tag-button').forEach(button => {
-  button.addEventListener('click', () => {
-    const tag = button.getAttribute('data-tag');
-    const timestamp = videoElement.currentTime.toFixed(2);
-    tagData.push({ tag, timestamp });
-    console.log(`タグ: ${tag}, 時間: ${timestamp}s`);
-  });
-});
-
-// ----------------------
-// 分析ボタンを作成
-const analyzeBtn = document.createElement('button');
-analyzeBtn.textContent = "分析とハイライト再生";
-document.body.appendChild(analyzeBtn);
-
-analyzeBtn.addEventListener('click', () => {
-  if(tagData.length === 0){
-    alert("まだタグが記録されていません");
-    return;
-  }
-
-  // タグ統計
-  const summary = tagData.reduce((acc, item) => {
-    acc[item.tag] = (acc[item.tag] || 0) + 1;
-    return acc;
-  }, {});
-
-  let message = "タグ統計:\n";
-  for(const [tag, count] of Object.entries(summary)){
-    message += `${tag}: ${count}回\n`;
-  }
-  alert(message);
-
-  // タイムライン表示（簡易版）
-  console.log("タイムライン（秒）:", tagData);
-
-  // ハイライト再生（ゴールとシュートだけ例）
-  const highlightTags = ['ゴール','シュート'];
-  let highlights = tagData.filter(item => highlightTags.includes(item.tag));
-
-  if(highlights.length > 0){
-    alert(`ハイライト再生: ${highlights.length}個のプレー`);
-    let index = 0;
-
-    function playHighlight() {
-      if(index >= highlights.length) return;
-      videoElement.currentTime = highlights[index].timestamp;
-      videoElement.play();
-      setTimeout(() => {
-        videoElement.pause();
-        index++;
-        playHighlight();
-      }, 3000); // 1プレー3秒で簡易再生
-    }
-
-    playHighlight();
-  } else {
-    alert("ゴール・シュートのハイライトはありません");
-  }
-});
-
-// オリジナルタグの追加
-addTagBtn.addEventListener('click', () => {
+addTagBtn.onclick = ()=>{
   const tagName = newTagInput.value.trim();
-  if (!tagName) return;
-
-  const newBtn = document.createElement('button');
-  newBtn.classList.add('tagBtn');
-  newBtn.setAttribute('data-tag', tagName);
-  newBtn.textContent = tagName;
-  tagContainer.appendChild(newBtn);
-
-  newBtn.addEventListener('click', () => {
-    const time = video.currentTime;
-    recordedTags.push({ tag: tagName, time });
-    updateHighlights();
-  });
-
+  if(!tagName) return;
+  const btn = document.createElement('button');
+  btn.textContent = tagName; btn.dataset.tag = tagName; btn.classList.add('tagBtn');
+  tagContainer.appendChild(btn);
+  btn.onclick = ()=>{ tagData.push({tag: tagName, timestamp: video.currentTime.toFixed(2)}); updateHighlights(); }
   newTagInput.value = '';
-});
-
-// ハイライトの更新
+};
 function updateHighlights() {
   highlightList.innerHTML = '';
-  recordedTags.forEach((entry, index) => {
+  tagData.forEach(item=>{
     const btn = document.createElement('button');
-    btn.textContent = `${entry.tag} (${formatTime(entry.time)})`;
-    btn.addEventListener('click', () => playHighlight(entry.time));
+    btn.textContent = `${item.tag} (${formatTime(item.timestamp)})`;
+    btn.onclick = ()=>{ video.currentTime = item.timestamp; video.play(); };
     highlightList.appendChild(btn);
   });
 }
+function formatTime(s){ const m=Math.floor(s/60); const sec=Math.floor(s%60); return `${m}:${sec.toString().padStart(2,'0')}`; }
 
-// ハイライト再生（前後5秒）
-function playHighlight(time) {
-  const start = Math.max(0, time - 5);
-  const end = Math.min(video.duration, time + 5);
-  video.currentTime = start;
-  video.play();
-
-  const interval = setInterval(() => {
-    if (video.currentTime >= end) {
-      video.pause();
-      clearInterval(interval);
-    }
-  }, 100);
-}
-
-// 秒 → mm:ss 形式
-function formatTime(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}// 既存コード（撮影・タグ付け・カメラ切替など）
-
-// ここから追加
-const video = document.getElementById('video');
-
-document.getElementById('playHighlight').onclick = () => { /* ハイライト再生 */ };
-document.getElementById('saveHighlight').onclick = () => { /* ハイライト保存 */ };
-document.getElementById('saveFullVideo').onclick = () => { /* 全体保存 */ };// コメント・メモ機能
-const notesList = document.getElementById('notesList');
-
-document.getElementById('addNote').onclick = () => {
-    const noteText = document.getElementById('sceneNote').value;
-    if(noteText) {
-        const li = document.createElement('li');
-        li.textContent = noteText;
-        notesList.appendChild(li);
-        document.getElementById('sceneNote').value = '';
-    }
-};// 再生速度変更機能
-const video = document.getElementById('video');
-document.getElementById('speedControl').onchange = (e) => {
-    video.playbackRate = parseFloat(e.target.value);
+// メモ
+document.getElementById('addNote').onclick = ()=>{
+  const text = sceneNote.value.trim(); if(!text) return;
+  const li = document.createElement('li'); li.textContent=text; notesList.appendChild(li);
+  sceneNote.value='';
 };
+
+// フォーメーション（名前表示・ドラッグ可）
+let playerCount=0;
+addPlayerBtn.onclick = ()=>{
+  const name = playerNameInput.value.trim(); if(!name) return;
+  const div = document.createElement('div');
+  div.className='player'; div.textContent=name;
+  div.style.left = (Math.random()*500)+'px';
+  div.style.top = (Math.random()*300)+'px';
+  div.draggable = true;
+  div.ondragstart = e=>{ e.dataTransfer.setData('text/plain', e.target.dataset.index); e.dataTransfer.setDragImage(new Image(),0,0); }
+  field.appendChild(div);
+  playerNameInput.value='';
+  playerCount++;
+};
+
+// ドラッグで移動
+field.addEventListener('dragover', e=>e.preventDefault());
+field.addEventListener('drop', e=>{
+  e.preventDefault();
+  const div = document.elementFromPoint(e.clientX, e.clientY);
+  if(div && div.classList.contains('player')){
+    div.style.left = (e.offsetX - div.offsetWidth/2)+'px';
+    div.style.top = (e.offsetY - div.offsetHeight/2)+'px';
+  }
+});
+
+// 全データ保存
+saveAllBtn.onclick = ()=>{
+  const data = {
+    teams: [document.getElementById('team1').value, document.getElementById('team2').value],
+    venue: document.getElementById('venue').value,
+    startTime: document.getElementById('startTime').value,
+    tags: tagData,
+    notes: Array.from(notesList.querySelectorAll('li')).map(li=>li.textContent),
+    formation: Array.from(field.querySelectorAll('.player')).map(p=>({name:p.textContent, left:p.style.left, top:p.style.top}))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download='match_data.json'; a.click();
+};
+</script>
 </body>
 </html>
