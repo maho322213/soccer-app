@@ -2,169 +2,184 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>サッカー試合管理</title>
+<title>サッカー試合管理アプリ 完全版</title>
 <style>
-  body { font-family: Arial, sans-serif; margin:20px; background:#f0f0f0; }
-  h2 { margin-top:30px; }
-  input, textarea, select, button { margin:5px 0; padding:5px; width:300px; }
-  #formation { display:grid; grid-template-columns:repeat(5, 60px); gap:5px; margin-top:10px; }
-  .player { background:#4CAF50; color:white; text-align:center; padding:10px; cursor:grab; user-select:none; }
-  .tag { display:inline-block; background:#2196F3; color:white; padding:5px 10px; margin:3px; border-radius:5px; }
-  #memos p { background:#ffeb3b; padding:5px; margin:3px 0; }
-  video { display:block; margin-top:10px; max-width:100%; }
+  body { font-family: Arial, sans-serif; background:#f0f2f5; margin:0; padding:0;}
+  header { background:#007bff; color:#fff; padding:10px; text-align:center;}
+  main { display:flex; padding:10px; gap:10px; }
+  section { background:#fff; padding:10px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.2);}
+  #video-section { flex:2; }
+  #info-section { flex:1; display:flex; flex-direction:column; gap:10px; }
+  button { margin:2px; padding:5px 10px; }
+  #tags button { margin:2px; }
+  #formation { display:grid; grid-template-columns: repeat(5, 50px); grid-auto-rows: 50px; gap:5px;}
+  .player { background:#007bff; color:#fff; display:flex; align-items:center; justify-content:center; border-radius:50%; cursor:grab; }
+  #hightlights, #memos { max-height:150px; overflow-y:auto; border:1px solid #ccc; padding:5px; }
 </style>
 </head>
 <body>
+<header>
+  <h1>サッカー試合管理アプリ 完全版</h1>
+</header>
+<main>
+  <section id="video-section">
+    <video id="video" width="640" controls></video><br>
+    <button id="startBtn">録画開始</button>
+    <button id="stopBtn">録画停止</button>
+    <button id="slowBtn">スロー再生</button>
+    <p>試合時間: <span id="timer">00:00</span></p>
+  </section>
+  <section id="info-section">
+    <h3>試合情報</h3>
+    チームA: <input id="teamA" placeholder="チームA"><br>
+    チームB: <input id="teamB" placeholder="チームB"><br>
+    会場: <input id="venue" placeholder="会場"><br>
+    開始時間: <input type="time" id="startTime"><br>
 
-<h1>サッカー試合管理</h1>
+    <h3>スタメン（名前）</h3>
+    <div id="starters"></div>
+    <h3>ベンチ</h3>
+    <div id="bench"></div>
+    <h3>スタッフ</h3>
+    <div id="staff"></div>
+    <h3>フォーメーション（ドラッグ可能）</h3>
+    <div id="formation"></div>
 
-<!-- 試合情報 -->
-<h2>試合情報</h2>
-<label>試合名: <input id="matchName" placeholder="チームA vs チームB"></label><br>
-<label>試合開始時間: <input id="matchTime" type="time"></label><br>
-<label>会場: <input id="matchVenue"></label>
+    <h3>タグ</h3>
+    <div id="tags">
+      <button data-tag="シュート">シュート</button>
+      <button data-tag="コーナーキック">コーナーキック</button>
+      <button data-tag="フリーキック">フリーキック</button>
+      <button data-tag="ファウル">ファウル</button>
+      <button data-tag="ゴール">ゴール</button>
+      <input id="customTag" placeholder="オリジナルタグ">
+      <button id="addCustomTag">追加</button>
+    </div>
 
-<!-- チーム情報 -->
-<h2>チーム情報</h2>
-<label>スタメン（カンマ区切りで下の名前）:<br>
-<textarea id="starters" rows="2" placeholder="太郎, 次郎, 三郎..."></textarea></label><br>
+    <h3>ハイライト</h3>
+    <div id="hightlights"></div>
 
-<label>ベンチ（カンマ区切り）:<br>
-<textarea id="bench" rows="2"></textarea></label><br>
+    <h3>メモ（時間に紐づく）</h3>
+    <input id="memoInput" placeholder="メモを入力">
+    <button id="addMemo">追加</button>
+    <div id="memos"></div>
 
-<label>スタッフ（カンマ区切り）:<br>
-<textarea id="staff" rows="1"></textarea></label><br>
-
-<!-- フォーメーション -->
-<h2>フォーメーション</h2>
-<button id="addFormation">表示</button>
-<div id="formation"></div>
-
-<!-- タグ -->
-<h2>タグ</h2>
-<input id="newTag" placeholder="タグ名">
-<button id="addTag">追加</button>
-<div id="tags"></div>
-
-<!-- メモ -->
-<h2>メモ</h2>
-<textarea id="newMemo" rows="2" placeholder="メモを入力"></textarea><br>
-<button id="addMemo">追加</button>
-<div id="memos"></div>
-
-<!-- 動画 -->
-<h2>動画</h2>
-<input id="videoFile" type="file" accept="video/*"><br>
-<video id="video" controls></video><br>
-<label>再生速度:
-<select id="playbackRate">
-  <option value="0.25">0.25x</option>
-  <option value="0.5">0.5x</option>
-  <option value="1" selected>1x</option>
-  <option value="1.5">1.5x</option>
-  <option value="2">2x</option>
-</select></label>
-
-<!-- 保存 -->
-<h2>保存</h2>
-<button id="saveAll">すべて保存</button>
+    <h3>データ保存</h3>
+    <button id="saveBtn">保存（JSON）</button>
+    <input type="file" id="loadFile">
+  </section>
+</main>
 
 <script>
-  // --- フォーメーション ---
-  const formationGrid = document.getElementById('formation');
-  const addFormationBtn = document.getElementById('addFormation');
-  let dragged = null;
+let mediaRecorder, recordedChunks = [];
+let video = document.getElementById('video');
+let timerSpan = document.getElementById('timer');
+let startTimeSec = 0, timerInterval;
 
-  function renderFormation() {
-    formationGrid.innerHTML = '';
-    const names = document.getElementById('starters').value.split(',').map(n => n.trim());
-    for (let i = 0; i < 10; i++) {
-      const div = document.createElement('div');
-      div.className = 'player';
-      div.draggable = true;
-      div.textContent = names[i] || '';
+const startersDiv = document.getElementById('starters');
+const benchDiv = document.getElementById('bench');
+const staffDiv = document.getElementById('staff');
+const formationDiv = document.getElementById('formation');
+const highlightsDiv = document.getElementById('hightlights');
+const memosDiv = document.getElementById('memos');
 
-      // ドラッグ
-      div.addEventListener('dragstart', e => { dragged = div; });
-      div.addEventListener('dragover', e => e.preventDefault());
-      div.addEventListener('drop', e => {
-        e.preventDefault();
-        if(dragged && dragged!==div){
-          const draggedIndex = Array.from(formationGrid.children).indexOf(dragged);
-          const dropIndex = Array.from(formationGrid.children).indexOf(div);
-          if(draggedIndex < dropIndex){
-            formationGrid.insertBefore(dragged, div.nextSibling);
-          } else {
-            formationGrid.insertBefore(dragged, div);
-          }
-        }
-        dragged = null;
-      });
+let tagsData = [];
 
-      formationGrid.appendChild(div);
-    }
-  }
+function updateTimer() {
+    startTimeSec++;
+    let min = String(Math.floor(startTimeSec/60)).padStart(2,'0');
+    let sec = String(startTimeSec%60).padStart(2,'0');
+    timerSpan.textContent = `${min}:${sec}`;
+}
 
-  addFormationBtn.addEventListener('click', renderFormation);
+document.getElementById('startBtn').onclick = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({video:true, audio:true});
+    video.srcObject = stream;
+    mediaRecorder = new MediaRecorder(stream, {mimeType:"video/webm"});
+    mediaRecorder.ondataavailable = e => { if(e.data.size>0) recordedChunks.push(e.data); };
+    mediaRecorder.start();
+    timerInterval = setInterval(updateTimer,1000);
+};
 
-  // --- タグ ---
-  const tagsDiv = document.getElementById('tags');
-  document.getElementById('addTag').addEventListener('click', () => {
-    const tagName = document.getElementById('newTag').value.trim();
-    if(!tagName) return;
-    const tag = document.createElement('div');
-    tag.className = 'tag';
-    tag.textContent = tagName;
-    tagsDiv.appendChild(tag);
-    document.getElementById('newTag').value='';
-  });
-
-  // --- メモ ---
-  const memosDiv = document.getElementById('memos');
-  document.getElementById('addMemo').addEventListener('click', () => {
-    const text = document.getElementById('newMemo').value.trim();
-    if(!text) return;
-    const p = document.createElement('p');
-    p.textContent = text;
-    memosDiv.appendChild(p);
-    document.getElementById('newMemo').value='';
-  });
-
-  // --- 動画 ---
-  const video = document.getElementById('video');
-  document.getElementById('videoFile').addEventListener('change', e => {
-    const file = e.target.files[0];
-    if(!file) return;
-    video.src = URL.createObjectURL(file);
-  });
-  document.getElementById('playbackRate').addEventListener('change', e => {
-    video.playbackRate = parseFloat(e.target.value);
-  });
-
-  // --- 保存 ---
-  document.getElementById('saveAll').addEventListener('click', () => {
-    const data = {
-      matchInfo: {
-        name: document.getElementById('matchName').value,
-        time: document.getElementById('matchTime').value,
-        venue: document.getElementById('matchVenue').value
-      },
-      teamInfo: {
-        starters: document.getElementById('starters').value.split(',').map(n=>n.trim()),
-        bench: document.getElementById('bench').value.split(',').map(n=>n.trim()),
-        staff: document.getElementById('staff').value.split(',').map(n=>n.trim()),
-        formation: Array.from(formationGrid.children).map(c=>c.textContent)
-      },
-      tags: Array.from(tagsDiv.children).map(c=>c.textContent),
-      memos: Array.from(memosDiv.children).map(c=>c.textContent),
-      video: video.src
+document.getElementById('stopBtn').onclick = () => {
+    mediaRecorder.stop();
+    clearInterval(timerInterval);
+    mediaRecorder.onstop = () => {
+        let blob = new Blob(recordedChunks,{type:"video/webm"});
+        video.src = URL.createObjectURL(blob);
+        video.controls = true;
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
-    const a = document.createElement('a');
+};
+
+document.getElementById('slowBtn').onclick = () => {
+    video.playbackRate = video.playbackRate===1 ? 0.5 : 1;
+};
+
+// フォーメーション表示（5x5グリッド例）
+for(let i=0;i<25;i++){
+    let div = document.createElement('div');
+    div.className = 'player';
+    div.textContent = '';
+    div.draggable = true;
+    div.ondragstart = e => { e.dataTransfer.setData('text', e.target.textContent); };
+    div.ondragover = e => { e.preventDefault(); };
+    div.ondrop = e => { let data = e.dataTransfer.getData('text'); let tmp = e.target.textContent; e.target.textContent=data; e.dataTransfer.setData('text',tmp); };
+    formationDiv.appendChild(div);
+}
+
+// タグ追加
+document.querySelectorAll('#tags button[data-tag]').forEach(btn=>{
+    btn.onclick = () => {
+        tagsData.push({tag:btn.dataset.tag, time:startTimeSec});
+        highlightsDiv.innerHTML += `<div>${formatTime(startTimeSec)} - ${btn.dataset.tag}</div>`;
+    };
+});
+document.getElementById('addCustomTag').onclick = () => {
+    let val = document.getElementById('customTag').value;
+    if(val){
+        tagsData.push({tag:val, time:startTimeSec});
+        highlightsDiv.innerHTML += `<div>${formatTime(startTimeSec)} - ${val}</div>`;
+        document.getElementById('customTag').value='';
+    }
+};
+
+function formatTime(sec){
+    let min = String(Math.floor(sec/60)).padStart(2,'0');
+    let s = String(sec%60).padStart(2,'0');
+    return `${min}:${s}`;
+}
+
+// メモ追加
+document.getElementById('addMemo').onclick = () => {
+    let text = document.getElementById('memoInput').value;
+    if(text){
+        let div = document.createElement('div');
+        div.textContent = `${formatTime(startTimeSec)} - ${text}`;
+        memosDiv.appendChild(div);
+        document.getElementById('memoInput').value='';
+    }
+};
+
+// データ保存
+document.getElementById('saveBtn').onclick = () => {
+    let data = {
+        teamA: document.getElementById('teamA').value,
+        teamB: document.getElementById('teamB').value,
+        venue: document.getElementById('venue').value,
+        startTime: document.getElementById('startTime').value,
+        starters: startersDiv.innerText,
+        bench: benchDiv.innerText,
+        staff: staffDiv.innerText,
+        formation: Array.from(formationDiv.children).map(c=>c.textContent),
+        tags: tagsData,
+        memos: Array.from(memosDiv.children).map(d=>d.textContent),
+    };
+    let blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    let a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download='match_data.json';
+    a.download = 'match_data.json';
     a.click();
-  });
+};
 </script>
 </body>
 </html>
